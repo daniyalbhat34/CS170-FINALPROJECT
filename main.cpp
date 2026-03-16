@@ -7,44 +7,53 @@
 
 using namespace std;
 
-double compDist(const vector<double>& testData, const vector<double>& compDataPoint, const vector<int>& features) {
-    double dist = 0;
-    for(int i = 0; i < features.size(); i++) {
-        dist += pow((testData.at(features.at(i)) - compDataPoint.at(features.at(i))), 2);
-    }
-
-    return sqrt(dist);
-}
-
-int predictClass(const vector<double>& testData, const vector<vector<double>>& compData, const vector<int>& features) {
-    double near_neig_dist = INFINITY;
-    int near_neig_label = 0;
-
-    for(int i = 0; i < compData.size(); i++) {
-        double distance = compDist(testData, compData.at(i), features);
-        if(distance < near_neig_dist) {
-            near_neig_dist = distance;
-            near_neig_label = compData.at(i).at(0);
-        }
-    }
-    return near_neig_label;
-}
-
 double leave_one_out_accuracy(const vector<vector<double>>& testData, const vector<int>& featureSet, int j) {
     int number_corr_class = 0;
     vector<int> features = featureSet;
     features.push_back(j);
+    
     for(int i = 0; i < testData.size(); i++) {
-        vector<vector<double>> compData;
-        for(int j = 0; j < testData.size(); j++) {
-            if(i != j) compData.push_back(testData.at(j));
+        double near_neig_dist = INFINITY;
+        int near_neig_label = 0;
+
+        for(int k = 0; k < testData.size(); k++) {
+            if(i == k) continue;
+            double dist = 0.0;
+
+            for(int m = 0; m < features.size(); m++) {
+                int featureIndex = features.at(m);
+                dist += ((testData[i][featureIndex] - testData[k][featureIndex]) * (testData[i][featureIndex] - testData[k][featureIndex]));
+
+            }
+            dist = sqrt(dist);
+
+            if(dist < near_neig_dist) {
+                near_neig_dist = dist;
+                near_neig_label = testData.at(k).at(0);
+            }
+
         }
 
-        int predictedClass = predictClass(testData.at(i), compData, features);
-        if(predictedClass  == testData.at(i).at(0)) number_corr_class++;
+        if(near_neig_label == testData.at(i).at(0)) number_corr_class++;
     }
 
     return (static_cast<double>(number_corr_class) / testData.size()) * 100;
+}
+
+bool containsFeature(const vector<int>& featureSet, int feature) {
+    for (int i = 0; i < (int)featureSet.size(); i++) {
+        if (featureSet[i] == feature) return true;
+    }
+    return false;
+}
+
+void printSet(const vector<int>& featureSet) {
+    cout << "{";
+    for (int i = featureSet.size() - 1; i >= 0; i++) {
+        if (i > 0) cout << ",";
+        cout << featureSet.at(i);
+    }
+    cout << "}";
 }
 
 double forwardSearch(const vector<vector<double>>& testData) {
@@ -53,17 +62,14 @@ double forwardSearch(const vector<vector<double>>& testData) {
     vector<int> bestSet;
     vector<int> featureSet;
     double finalAccuracy = 0;
-
-    for(int i = 1; i <= testData.at(0).size() - 1; i++) {
+    int numFeatures = testData.at(0).size() - 1;
+    for(int i = 1; i <= numFeatures; i++) {
         int feature_to_add_at_this_level = 0;
         double best_so_far_accuracy = 0;
 
-        for(int j = 1; j <= testData.at(0).size() - 1; j++) {
-            bool added = false;
-            for(int k = 0; k < featureSet.size(); k++) {
-                if(j == featureSet.at(k)) added = true;
-            }
-            if(!added) {
+        for(int j = 1; j <= numFeatures; j++) {
+   
+            if (containsFeature(featureSet, j)) continue;
                 double accuracy = leave_one_out_accuracy(testData, featureSet, j);
                 cout << "     Using feature (s) " <<"{"; 
                 cout << j;
@@ -77,7 +83,6 @@ double forwardSearch(const vector<vector<double>>& testData) {
                     best_so_far_accuracy = accuracy;
                     feature_to_add_at_this_level = j;
                 }
-            }
             
         }
         featureSet.push_back(feature_to_add_at_this_level);
@@ -85,15 +90,13 @@ double forwardSearch(const vector<vector<double>>& testData) {
             best_overall_accuracy = best_so_far_accuracy;
             bestSet = featureSet;
         }
-        if(i != testData.at(0).size()) {
-            cout << "Feature set {";
+            cout << "Feature set {}";
             for(int m = featureSet.size() - 1; m >= 0; m--) {
                 cout << featureSet.at(m);
                 if(m != 0) cout << ",";
             }
             cout << "} was best, accuracy is " << best_so_far_accuracy << "%\n";
-        }
-        
+
         
         finalAccuracy = best_so_far_accuracy;
     }
@@ -107,6 +110,13 @@ double forwardSearch(const vector<vector<double>>& testData) {
     return finalAccuracy;
 }
 
+double backwardElimination(const vector<vector<double>>& data){
+    vector<int> featureSet;
+    for(int i = 0; i < data.at(0).size() - 1; i++) featureSet.push_back(i);
+    vector<int> bestSet = featureSet;
+    return 0;
+}
+
 int main () {
 
     cout << "Welcome to Daniyal Bhat's Feature Selection Algorithm.";
@@ -116,6 +126,8 @@ int main () {
 
     cout << "\nType the number of the algorithm you want to run.\n";
     cout << "     1) Forward Selection\n     2) Backward Elimination\n";
+    int input;
+    cin >> input;
 
     ifstream file(fileName);
 
@@ -138,12 +150,19 @@ int main () {
         data.push_back(values);
     }
 
+    double accuracy = 0;
+
     file.close();
     cout << "This dataset has " << data.at(0).size() - 1 << " features "
         << "(not including the class attribute) with " << data.size() << " instances.\n";
 
     auto start = std::chrono::high_resolution_clock::now();
-    double accuracy = forwardSearch(data);
+    if(input == 1) {
+        accuracy = forwardSearch(data);
+    } else {
+        accuracy = backwardElimination(data);
+    }
+    
     auto stop = std::chrono::high_resolution_clock::now();
 
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
