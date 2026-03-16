@@ -2,26 +2,45 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-#include <cstdlib>
+#include <cmath>
+#include <chrono>
 
 using namespace std;
 
-int preductClass(const vector<double>& testData, const vector<vector<double>>& compData, const vector<int>& features) {
-    
+double compDist(const vector<double>& testData, const vector<double>& compDataPoint, const vector<int>& features) {
+    double dist = 0;
+    for(int i = 0; i < features.size(); i++) {
+        dist += pow((testData.at(features.at(i)) - compDataPoint.at(features.at(i))), 2);
+    }
+
+    return sqrt(dist);
 }
 
-double leave_one_out_accuracy(vector<vector<double>> testData,vector<int> featureSet, int j) {
+int predictClass(const vector<double>& testData, const vector<vector<double>>& compData, const vector<int>& features) {
+    double near_neig_dist = INFINITY;
+    int near_neig_label = 0;
+
+    for(int i = 0; i < compData.size(); i++) {
+        double distance = compDist(testData, compData.at(i), features);
+        if(distance < near_neig_dist) {
+            near_neig_dist = distance;
+            near_neig_label = compData.at(i).at(0);
+        }
+    }
+    return near_neig_label;
+}
+
+double leave_one_out_accuracy(const vector<vector<double>>& testData, const vector<int>& featureSet, int j) {
     int number_corr_class = 0;
     vector<int> features = featureSet;
     features.push_back(j);
-
     for(int i = 0; i < testData.size(); i++) {
         vector<vector<double>> compData;
-        for(int j = 0; i < testData.size(); j++) {
+        for(int j = 0; j < testData.size(); j++) {
             if(i != j) compData.push_back(testData.at(j));
         }
 
-        int predictedClass = preductClass(testData.at(i), compData, features);
+        int predictedClass = predictClass(testData.at(i), compData, features);
         if(predictedClass  == testData.at(i).at(0)) number_corr_class++;
     }
 
@@ -46,7 +65,6 @@ void forwardSearch(const vector<vector<double>>& testData) {
             if(!added) {
                 cout << "--Considering adding the " << j << " feature\n";
                 double accuracy = leave_one_out_accuracy(testData, featureSet, j);
-
                 if(accuracy > best_so_far_accuracy) {
                     best_so_far_accuracy = accuracy;
                     feature_to_add_at_this_level = j;
@@ -63,7 +81,7 @@ void forwardSearch(const vector<vector<double>>& testData) {
 
 int main () {
 
-    ifstream file("CS170_Small_DataSet__1.txt");
+    ifstream file("CS170_Small_DataSet__23.txt");
 
     vector<vector<double>> data;
     string row;
@@ -86,9 +104,12 @@ int main () {
 
     file.close();
 
+    auto start = std::chrono::high_resolution_clock::now();
     forwardSearch(data);
+    auto stop = std::chrono::high_resolution_clock::now();
 
-
+     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        cout << "Time taken is " << (duration.count() / 1000000.0)  << " seconds" << endl;
 
     return 0;
 }
