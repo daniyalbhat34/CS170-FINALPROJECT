@@ -90,7 +90,7 @@ double forwardSearch(const vector<vector<double>>& testData) {
             best_overall_accuracy = best_so_far_accuracy;
             bestSet = featureSet;
         }
-            cout << "Feature set {}";
+            cout << "Feature set {";
             for(int m = featureSet.size() - 1; m >= 0; m--) {
                 cout << featureSet.at(m);
                 if(m != 0) cout << ",";
@@ -111,10 +111,71 @@ double forwardSearch(const vector<vector<double>>& testData) {
 }
 
 double backwardElimination(const vector<vector<double>>& data){
+    cout << "Beginning Elimination\n";
     vector<int> featureSet;
-    for(int i = 0; i < data.at(0).size() - 1; i++) featureSet.push_back(i);
+    int numFeatures = data[0].size() - 1;
+    for(int i = 1; i <= numFeatures; i++) featureSet.push_back(i);
     vector<int> bestSet = featureSet;
-    return 0;
+
+    double bestOverallAccuracy = 0;
+    double finalAccuracy = 0.0;
+
+    while(featureSet.size() > 1) {
+        int feature_to_remove = -1;
+        double best_so_far_accuracy = 0.0;
+        for(int i = 0; i < featureSet.size(); i++) {
+            vector<int> newSet(featureSet.size() - 1);
+            int index = 0;
+            for(int p = 0; p < featureSet.size(); p++) {
+                if(p != i) {
+                    newSet[index++] = featureSet[p];
+                }
+            }
+            int remoFeature = featureSet[i];
+
+            double accuracy = leave_one_out_accuracy(data, newSet, newSet[0]);
+
+            cout << "     Using feature (s) " <<"{"; 
+            for (int l = 0; l < newSet.size(); l++) {
+                cout << newSet[l];
+                if(l < newSet.size() - 1) cout << ",";
+            }
+            cout << "} accuracy is " << accuracy << "%\n";
+            if(accuracy > best_so_far_accuracy ) {
+                best_so_far_accuracy = accuracy;
+                feature_to_remove = remoFeature;
+            }
+        }
+
+        for(int j = 0; j < featureSet.size(); j++) {
+            if(featureSet[j] == feature_to_remove) {
+                featureSet.erase(featureSet.begin() + j);
+                break;
+            }
+        }
+        if(featureSet.size() >= 2) {
+            cout << "Feature set {";
+            for(int m = featureSet.size() - 1; m >= 0; m--) {
+                cout << featureSet[m];
+                if(m != 0) cout << ",";
+            }
+            cout << "} was best, accuracy is " << best_so_far_accuracy << "%\n";
+        }
+        
+        finalAccuracy = best_so_far_accuracy;
+
+        if(best_so_far_accuracy > bestOverallAccuracy) {
+            bestOverallAccuracy = best_so_far_accuracy;
+            bestSet = featureSet;
+        }
+    }
+    cout << "Finished search!! The best feature subset is {";
+    for(int n = 0; n < bestSet.size(); n++) {
+        cout << bestSet[n];
+        if(n != bestSet.size() - 1) cout << ",";
+    }
+    cout << "}, which has an accuracy of " << bestOverallAccuracy << "%\n";
+    return finalAccuracy;
 }
 
 int main () {
@@ -166,7 +227,7 @@ int main () {
     auto stop = std::chrono::high_resolution_clock::now();
 
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-        cout << "Time taken is " << (duration.count() / 1000000.0)  << " seconds" << endl;
+        cout << "Time taken is " << (duration.count() / 3600000000.0)  << " hours" << endl;
 
         cout << "Running nearest neighbor with all 4 features, " 
             << "using leaving-one-out evaluation, I get an accuracy of "
