@@ -44,16 +44,17 @@ double leave_one_out_accuracy(const vector<vector<double>>& testData, const vect
         if(predictedClass  == testData.at(i).at(0)) number_corr_class++;
     }
 
-    return static_cast<double>(number_corr_class) / testData.size();
+    return (static_cast<double>(number_corr_class) / testData.size()) * 100;
 }
 
-void forwardSearch(const vector<vector<double>>& testData) {
-
+double forwardSearch(const vector<vector<double>>& testData) {
+    cout << "Beginning Search\n";
+    double best_overall_accuracy = 0;
+    vector<int> bestSet;
     vector<int> featureSet;
+    double finalAccuracy = 0;
 
     for(int i = 1; i <= testData.at(0).size() - 1; i++) {
-        cout << "On the " << i << " th level of the search tree\n";
-
         int feature_to_add_at_this_level = 0;
         double best_so_far_accuracy = 0;
 
@@ -63,8 +64,15 @@ void forwardSearch(const vector<vector<double>>& testData) {
                 if(j == featureSet.at(k)) added = true;
             }
             if(!added) {
-                cout << "--Considering adding the " << j << " feature\n";
                 double accuracy = leave_one_out_accuracy(testData, featureSet, j);
+                cout << "     Using feature (s) " <<"{"; 
+                cout << j;
+                if(featureSet.size() != 0) cout << ",";
+                for (int l = featureSet.size() - 1; l >= 0; l--) {
+                    cout << featureSet.at(l);
+                    if(l != 0) cout << ",";
+                }
+                cout << "} accuracy is " << accuracy << "%\n";
                 if(accuracy > best_so_far_accuracy) {
                     best_so_far_accuracy = accuracy;
                     feature_to_add_at_this_level = j;
@@ -73,15 +81,43 @@ void forwardSearch(const vector<vector<double>>& testData) {
             
         }
         featureSet.push_back(feature_to_add_at_this_level);
-
-        cout << "On level " << i << " i added feature " << feature_to_add_at_this_level
-        << " to current set\n";
+        if(best_so_far_accuracy > best_overall_accuracy ) {
+            best_overall_accuracy = best_so_far_accuracy;
+            bestSet = featureSet;
+        }
+        if(i != testData.at(0).size()) {
+            cout << "Feature set {";
+            for(int m = featureSet.size() - 1; m >= 0; m--) {
+                cout << featureSet.at(m);
+                if(m != 0) cout << ",";
+            }
+            cout << "} was best, accuracy is " << best_so_far_accuracy << "%\n";
+        }
+        
+        
+        finalAccuracy = best_so_far_accuracy;
     }
+    
+    cout << "Finished search!! The best feature subset is {";
+    for(int n = bestSet.size() - 1; n >= 0; n--) {
+        cout << bestSet.at(n);
+        if(n != 0) cout << ",";
+    }
+    cout << "}, which has an accuracy of " << best_overall_accuracy << "%\n";
+    return finalAccuracy;
 }
 
 int main () {
 
-    ifstream file("CS170_Small_DataSet__23.txt");
+    cout << "Welcome to Daniyal Bhat's Feature Selection Algorithm.";
+    cout << "Type in the name of the file to test: ";
+    string fileName;
+    cin >> fileName;
+
+    cout << "\nType the number of the algorithm you want to run.\n";
+    cout << "     1) Forward Selection\n     2) Backward Elimination\n";
+
+    ifstream file(fileName);
 
     vector<vector<double>> data;
     string row;
@@ -103,13 +139,19 @@ int main () {
     }
 
     file.close();
+    cout << "This dataset has " << data.at(0).size() - 1 << " features "
+        << "(not including the class attribute) with " << data.size() << " instances.\n";
 
     auto start = std::chrono::high_resolution_clock::now();
-    forwardSearch(data);
+    double accuracy = forwardSearch(data);
     auto stop = std::chrono::high_resolution_clock::now();
 
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
         cout << "Time taken is " << (duration.count() / 1000000.0)  << " seconds" << endl;
+
+        cout << "Running nearest neighbor with all 4 features, " 
+            << "using leaving-one-out evaluation, I get an accuracy of "
+            << accuracy << "%\n";
 
     return 0;
 }
