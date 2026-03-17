@@ -147,17 +147,18 @@ double backwardElimination(const vector<vector<double>>& data){
             }
         }
 
-        for(int j = 0; j < featureSet.size(); j++) {
-            if(featureSet[j] == feature_to_remove) {
-                featureSet.erase(featureSet.begin() + j);
-                break;
+        for (int z = 0; z < featureSet.size(); z++) {
+            if (featureSet[z] == feature_to_remove) {
+                featureSet.erase(featureSet.begin() + z);
+                break; 
             }
         }
+
         if(featureSet.size() >= 2) {
             cout << "Feature set {";
-            for(int m = featureSet.size() - 1; m >= 0; m--) {
+            for(int m = 0; m < featureSet.size(); m++) {
                 cout << featureSet[m];
-                if(m != 0) cout << ",";
+                if(m < featureSet.size() - 1) cout << ",";
             }
             cout << "} was best, accuracy is " << best_so_far_accuracy << "%\n";
         }
@@ -186,10 +187,10 @@ int main () {
     cin >> fileName;
 
     cout << "\nType the number of the algorithm you want to run.\n";
-    cout << "     1) Forward Selection\n     2) Backward Elimination\n";
+    cout << "     1) Forward Selection\n     2) Backward Elimination\n Enter the input ";
     int input;
     cin >> input;
-
+    cout << endl;
     ifstream file(fileName);
 
     vector<vector<double>> data;
@@ -229,7 +230,7 @@ int main () {
      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
         cout << "Time taken is " << (duration.count() / 3600000000.0)  << " hours" << endl;
 
-        cout << "Running nearest neighbor with all 4 features, " 
+        cout << "Running nearest neighbor with all " << data.at(0).size() - 1 << " features, " 
             << "using leaving-one-out evaluation, I get an accuracy of "
             << accuracy << "%\n";
 
